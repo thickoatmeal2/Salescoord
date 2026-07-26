@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Correlation Finder</title>
+  <script src="[https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>](https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>)
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      padding: 40px;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 { color: #2c3e50; }
+    .upload-box {
+      background: white;
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      font-size: 13px;
+    }
+    th { background: #2c3e50; color: white; }
+    .correlations {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .corr-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      background: #f0f8ff;
+    }
+    .strong { background: #d4edda; }
+    .weak { background: #fff3cd; }
+  </style>
+</head>
+<body>
+  <h1>Spreadsheet Correlation Finder</h1>
+  <div class="upload-box">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+    <p>Upload a spreadsheet to see your data and correlations</p>
+  </div>
+  <div id="tableContainer"></div>
+  <div id="corrContainer" class="correlations" style="display:none;">
+    <h3>Correlations Found</h3>
+    <div id="corrList"></div>
+  </div>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        displayTable(json);
+        findCorrelations(json);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function displayTable(data) {
+      if (!data.length) return;
+      const cols = Object.keys(data[0]);
+      let html = '<table><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+      data.slice(0, 10).forEach(row => {
+        html += '<tr>' + cols.map(c => `<td>${row[c]}</td>`).join('') + '</tr>';
+      });
+      html += '</table>';
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    function pearsonCorrelation(x, y) {
+      const n = x.length;
+      const sumX = x.reduce((a,b) => a+b, 0);
+      const sumY = y.reduce((a,b) => a+b, 0);
+      const sumXY = x.reduce((sum, xi, i) => sum + xi*y[i], 0);
+      const sumX2 = x.reduce((sum, xi) => sum + xi*xi, 0);
+      const sumY2 = y.reduce((sum, yi) => sum + yi*yi, 0);
+      const num = n*sumXY - sumX*sumY;
+      const den = Math.sqrt((n*sumX2 - sumX*sumX) * (n*sumY2 - sumY*sumY));
+      return den === 0 ? 0 : num/den;
+    }
+
+    function findCorrelations(data) {
+      if (!data.length) return;
+      const cols = Object.keys(data[0]);
+      const numericCols = cols.filter(c => 
+        data.every(row => !isNaN(parseFloat(row[c])))
+      );
+
+      let results = [];
+      for (let i = 0; i < numericCols.length; i++) {
+        for (let j = i+1; j < numericCols.length; j++) {
+          const colA = numericCols[i], colB = numericCols[j];
+          const x = data.map(r => parseFloat(r[colA]));
+          const y = data.map(r => parseFloat(r[colB]));
+          const r = pearsonCorrelation(x, y);
+          results.push({ colA, colB, r });
+        }
+      }
+
+      results.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+
+      const container = document.getElementById('corrList');
+      container.innerHTML = '';
+      results.forEach(res => {
+        const strength = Math.abs(res.r) > 0.7 ? 'strong' : Math.abs(res.r) > 0.4 ? 'weak' : '';
+        const direction = res.r > 0 ? 'positive' : 'negative';
+        const desc = Math.abs(res.r) > 0.7 ? 'strong' : Math.abs(res.r) > 0.4 ? 'moderate' : 'weak';
+        container.innerHTML += `<div class="corr-item ${strength}">
+          <strong>${res.colA}</strong> vs <strong>${res.colB}</strong>: 
+          ${desc} ${direction} correlation (r = ${res.r.toFixed(2)})
+        </div>`;
+      });
+      document.getElementById('corrContainer').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
