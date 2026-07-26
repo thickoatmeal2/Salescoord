@@ -1,139 +1,599 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Data Correlation Finder</title>
-  <script src="[https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>](https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>)
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      padding: 40px;
-      max-width: 900px;
-      margin: auto;
-    }
-    h1 { color: #2c3e50; }
-    .upload-box {
-      background: white;
-      border: 2px dashed #ccc;
-      border-radius: 12px;
-      padding: 40px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      margin-bottom: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-      font-size: 13px;
-    }
-    th { background: #2c3e50; color: white; }
-    .correlations {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .corr-item {
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      background: #f0f8ff;
-    }
-    .strong { background: #d4edda; }
-    .weak { background: #fff3cd; }
-  </style>
+<meta charset="UTF-8">
+<title>SalesCoord Terminal</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05070d;
+    --bg-alt: #0a0e17;
+    --panel: #0d121e;
+    --panel-alt: #10182a;
+    --border: #1c2436;
+    --grid-line: #161d2c;
+    --amber: #ffab2e;
+    --amber-dim: #8a6a2f;
+    --cyan: #35e4ec;
+    --cyan-dim: #1f7a80;
+    --green: #3ce87a;
+    --red: #ff4d5e;
+    --text: #dce6f2;
+    --text-dim: #7c8aa3;
+    --text-faint: #4a5468;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --glow-amber: 0 0 8px rgba(255,171,46,0.35);
+    --glow-cyan: 0 0 8px rgba(53,228,236,0.35);
+  }
+
+  [data-theme="day"] {
+    --bg: #eef0e8;
+    --bg-alt: #e4e7dc;
+    --panel: #fbfbf7;
+    --panel-alt: #f2f3ec;
+    --border: #cdd1c2;
+    --grid-line: #dcdfd3;
+    --amber: #b85c00;
+    --amber-dim: #d6a25e;
+    --cyan: #007a85;
+    --cyan-dim: #5fa8ad;
+    --green: #1f8a44;
+    --red: #c62330;
+    --text: #1a2030;
+    --text-dim: #5b6474;
+    --text-faint: #99a1ab;
+    --glow-amber: 0 0 0 rgba(0,0,0,0);
+    --glow-cyan: 0 0 0 rgba(0,0,0,0);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-mono);
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 100% 24px,
+      var(--bg);
+    color: var(--text);
+    margin: 0;
+    min-height: 100vh;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  .navbar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--amber);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .navbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 0.5px;
+    text-shadow: var(--glow-amber);
+  }
+  .logo span { color: var(--cyan); text-shadow: var(--glow-cyan); }
+  .ticker-tag {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-faint);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 6px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .theme-toggle .opt { padding: 4px 10px; border-radius: 14px; transition: 0.15s; }
+  .theme-toggle .opt.active { background: var(--amber); color: #05070d; font-weight: 600; }
+  [data-theme="day"] .theme-toggle .opt.active { color: #fff; }
+
+  .page { display: none; padding: 34px; max-width: 1200px; margin: auto; }
+  .page.active { display: block; }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    margin: 0 0 20px 0;
+    color: var(--text);
+  }
+  h1::before { content: "// "; color: var(--cyan); }
+
+  .period-select-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .period-select-row span.label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .period-toggle {
+    display: flex;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px;
+  }
+  .period-toggle .opt {
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: 0.15s;
+  }
+  .period-toggle .opt.active { background: var(--cyan); color: #05070d; font-weight: 600; }
+  [data-theme="day"] .period-toggle .opt.active { color: #fff; }
+
+  .drop-zone {
+    border: 1px dashed var(--amber-dim);
+    border-radius: 4px;
+    background: var(--panel);
+    padding: 56px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .drop-zone:hover { border-color: var(--amber); box-shadow: var(--glow-amber); }
+  .drop-zone.dragover { background: var(--panel-alt); border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+  .drop-zone p { color: var(--text-dim); margin: 6px 0; font-size: 13px; }
+  .drop-zone .hint { color: var(--text-faint); font-size: 11px; letter-spacing: 0.5px; }
+
+  button {
+    background: transparent;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    padding: 10px 18px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: 0.15s;
+    text-transform: uppercase;
+  }
+  button:hover { background: var(--amber); color: #05070d; box-shadow: var(--glow-amber); }
+  [data-theme="day"] button:hover { color: #fff; }
+
+  .summary-panel {
+    background: var(--panel);
+    border: 1px solid var(--cyan-dim);
+    border-left: 3px solid var(--cyan);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+  .summary-panel h3 {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0 0 10px 0;
+  }
+  .summary-panel p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0 0 10px 0;
+  }
+  .summary-panel p:last-child { margin-bottom: 0; }
+  .summary-panel .caveat { color: var(--text-faint); font-size: 11px; font-style: italic; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); font-size: 12px; }
+  th, td { border: 1px solid var(--grid-line); padding: 9px 12px; text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th {
+    background: var(--panel-alt);
+    color: var(--cyan);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    position: sticky; top: 0;
+  }
+  td { cursor: pointer; transition: 0.12s; color: var(--text); }
+  td:hover { background: rgba(255,171,46,0.12); box-shadow: inset 0 0 0 1px var(--amber-dim); }
+  .source-cell { color: var(--cyan) !important; font-weight: 600; text-align: left !important; }
+  .period-cell { color: var(--amber) !important; font-weight: 600; }
+
+  .correlations { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 18px 20px; }
+  .correlations h3 {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 14px 0;
+  }
+  .corr-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    border-left: 3px solid var(--text-faint);
+    background: var(--panel-alt);
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .corr-item .pair { color: var(--text); }
+  .corr-item .rval { font-weight: 700; }
+  .corr-item.pos { border-left-color: var(--green); }
+  .corr-item.neg { border-left-color: var(--red); }
+  .corr-item.pos .rval { color: var(--green); }
+  .corr-item.neg .rval { color: var(--red); }
+  .corr-item.strong { box-shadow: inset 0 0 0 1px currentColor; }
+
+  .back-btn { color: var(--text-dim); border-color: var(--border); margin-bottom: 20px; }
+  .back-btn:hover { background: var(--panel-alt); color: var(--text); box-shadow: none; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; z-index: 999;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--amber);
+    border-radius: 6px;
+    padding: 24px;
+    width: 380px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5), var(--glow-amber);
+  }
+  .modal h3 {
+    margin-top: 0;
+    color: var(--amber);
+    font-family: var(--font-display);
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+  .modal p { color: var(--text); font-size: 12px; line-height: 1.6; white-space: pre-line; }
+  .modal button { border-color: var(--border); color: var(--text-dim); }
+  .modal button:hover { background: var(--panel-alt); color: var(--text); box-shadow: none; }
+</style>
 </head>
-<body>
-  <h1>Spreadsheet Correlation Finder</h1>
-  <div class="upload-box">
-    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
-    <p>Upload a spreadsheet to see your data and correlations</p>
+<body data-theme="night">
+<div class="navbar">
+  <div class="navbar-left">
+    <div class="logo">Sales<span>Coord</span></div>
+    <div class="ticker-tag">OPS TERMINAL</div>
   </div>
-  <div id="tableContainer"></div>
-  <div id="corrContainer" class="correlations" style="display:none;">
-    <h3>Correlations Found</h3>
-    <div id="corrList"></div>
+  <div class="theme-toggle" id="themeToggle">
+    <span class="opt active" data-mode="night">NIGHT</span>
+    <span class="opt" data-mode="day">DAY</span>
   </div>
+</div>
 
-  <script>
-    document.getElementById('fileInput').addEventListener('change', handleFile);
+<div id="uploadPage" class="page active">
+  <h1>Upload Your Data</h1>
+  <div class="period-select-row">
+    <span class="label">Sample period:</span>
+    <div class="period-toggle" id="periodToggle">
+      <span class="opt active" data-period="weekly">Weekly</span>
+      <span class="opt" data-period="monthly">Monthly</span>
+      <span class="opt" data-period="quarterly">Quarterly</span>
+    </div>
+  </div>
+  <div class="drop-zone" id="dropZone">
+    <p>Drag &amp; drop your spreadsheet here, or click to browse</p>
+    <p class="hint">ACCEPTED: .XLSX &middot; .XLS &middot; .CSV — ONE ROW PER PERIOD, WITH A SOURCE COLUMN (REGION, SALESPERSON, STORE) AND OPTIONALLY A PERIOD COLUMN (WEEK/MONTH/QUARTER)</p>
+  </div>
+  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+  <button onclick="generateRandomData()">Generate Sample Data</button>
+</div>
 
-    function handleFile(e) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
-        displayTable(json);
-        findCorrelations(json);
-      };
-      reader.readAsArrayBuffer(file);
+<div id="resultsPage" class="page">
+  <button class="back-btn" onclick="goBack()">&larr; Back</button>
+  <h1>Data Overview</h1>
+  <div class="summary-panel" id="summaryPanel">
+    <h3>Analyst Note</h3>
+    <div id="summaryText"></div>
+  </div>
+  <div class="table-scroll"><div id="tableContainer"></div></div>
+  <div class="correlations"><h3>Correlations Detected</h3><div id="corrList"></div></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Details</h3>
+    <p id="modalBody"></p>
+    <button onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
+let currentData = [];
+let numericCols = [];
+let sourceCol = null;
+let periodCol = null;
+let selectedPeriod = 'weekly';
+
+// ---------- Theme ----------
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', (e) => {
+  const opt = e.target.closest('.opt');
+  if (!opt) return;
+  document.body.setAttribute('data-theme', opt.dataset.mode);
+  themeToggle.querySelectorAll('.opt').forEach(o => o.classList.toggle('active', o === opt));
+});
+
+// ---------- Period selector ----------
+const periodToggle = document.getElementById('periodToggle');
+periodToggle.addEventListener('click', (e) => {
+  const opt = e.target.closest('.opt');
+  if (!opt) return;
+  selectedPeriod = opt.dataset.period;
+  periodToggle.querySelectorAll('.opt').forEach(o => o.classList.toggle('active', o === opt));
+});
+
+// ---------- Upload wiring ----------
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function goBack(){ document.getElementById('resultsPage').classList.remove('active'); document.getElementById('uploadPage').classList.add('active'); }
+function showResults(){ document.getElementById('uploadPage').classList.remove('active'); document.getElementById('resultsPage').classList.add('active'); }
+function closeModal(){ document.getElementById('modalOverlay').style.display='none'; }
+
+const contacts = {
+  "North": "Contact: Jane Doe — jane@salescoord.com",
+  "South": "Contact: Mike Lee — mike@salescoord.com",
+  "East": "Contact: Ana Ruiz — ana@salescoord.com",
+  "West": "Contact: Sam Patel — sam@salescoord.com"
+};
+
+// ---------- Period label generation ----------
+function genPeriodLabels(type, count) {
+  const now = new Date();
+  const labels = [];
+  if (type === 'weekly') {
+    for (let i = count - 1; i >= 0; i--) labels.push(`Wk ${count - i}`);
+  } else if (type === 'monthly') {
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels.push(`${monthNames[d.getMonth()]} ${d.getFullYear()}`);
     }
+  } else { // quarterly
+    const curQ = Math.floor(now.getMonth() / 3);
+    let y = now.getFullYear(), q = curQ;
+    const seq = [];
+    for (let i = 0; i < count; i++) {
+      seq.unshift(`Q${q+1} ${y}`);
+      q--; if (q < 0) { q = 3; y--; }
+    }
+    labels.push(...seq);
+  }
+  return labels;
+}
 
-    function displayTable(data) {
-      if (!data.length) return;
-      const cols = Object.keys(data[0]);
-      let html = '<table><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
-      data.slice(0, 10).forEach(row => {
-        html += '<tr>' + cols.map(c => `<td>${row[c]}</td>`).join('') + '</tr>';
+// ---------- Sample data generation ----------
+function generateRandomData(){
+  const regions = ["North","South","East","West"];
+  const countMap = { weekly: 12, monthly: 12, quarterly: 8 };
+  const count = countMap[selectedPeriod];
+  const labels = genPeriodLabels(selectedPeriod, count);
+  const clamp = v => Math.min(100, Math.max(25, v));
+  const data = [];
+
+  for (let i = 0; i < count; i++) {
+    const discount = Math.random()*30;
+    const units = 1000 + i*15 + discount*20 + Math.random()*100;
+    const cost = 60 + Math.random()*10;
+    const revenue = (100-discount)*units;
+    const margin = ((100-discount)-cost)/(100-discount)*100;
+
+    const orderProcessingEfficiency = clamp(55 + units/40 - discount*0.6 + i*0.6 + (Math.random()*10 - 5));
+    const operationalSupport = clamp(80 - discount*1.1 + (Math.random()*12 - 6));
+    const inventoryTracking = clamp(60 + (orderProcessingEfficiency - 55)*0.5 + (Math.random()*14 - 7));
+    const interdeptComms = clamp(50 + operationalSupport*0.3 + (Math.random()*16 - 8));
+
+    data.push({
+      Period: labels[i],
+      Source: regions[Math.floor(Math.random()*regions.length)],
+      Revenue: Math.round(revenue),
+      Cost: Math.round(cost),
+      Units: Math.round(units),
+      Discount: Math.round(discount),
+      Margin: Math.round(margin),
+      OrderProcessingEfficiency: Math.round(orderProcessingEfficiency),
+      OperationalSupport: Math.round(operationalSupport),
+      InventoryAssetTracking: Math.round(inventoryTracking),
+      InterdeptComms: Math.round(interdeptComms)
+    });
+  }
+  loadData(data);
+}
+
+function handleFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(event){
+    const data = new Uint8Array(event.target.result);
+    const workbook = XLSX.read(data, {type:'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet);
+    loadData(json);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function labelize(col) {
+  return col.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+}
+
+function loadData(data){
+  currentData = data;
+  const cols = Object.keys(data[0]);
+  sourceCol = cols.find(c => /source|region|location|salesperson|store/i.test(c)) || null;
+  periodCol = cols.find(c => /period|week|month|quarter|date/i.test(c)) || null;
+  numericCols = cols.filter(c => c !== sourceCol && c !== periodCol && data.every(r => !isNaN(parseFloat(r[c]))));
+  displayTable(data, cols);
+  const results = computeCorrelations(data);
+  renderCorrelations(results);
+  renderSummary(data, results);
+  showResults();
+}
+
+function displayTable(data, cols){
+  let html = '<table><tr>' + cols.map(c=>`<th>${labelize(c)}</th>`).join('') + '</tr>';
+  data.slice(0,12).forEach((row, ri) => {
+    html += '<tr>' + cols.map(c => {
+      let cls = '';
+      if (c === sourceCol) cls = 'source-cell';
+      if (c === periodCol) cls = 'period-cell';
+      return `<td class="${cls}" onclick="cellClick(${ri}, '${c}')">${row[c]}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</table>';
+  document.getElementById('tableContainer').innerHTML = html;
+}
+
+function cellClick(rowIndex, col){
+  const row = currentData[rowIndex];
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modalBody');
+
+  if (col === sourceCol) {
+    const val = row[col];
+    modalTitle.textContent = val;
+    modalBody.textContent = contacts[val] || "Contact info not available.";
+  } else if (col === periodCol) {
+    let text = '';
+    numericCols.forEach(c => { text += `${labelize(c)}: ${row[c]}\n`; });
+    modalTitle.textContent = row[col];
+    modalBody.textContent = text;
+  } else {
+    let text = `Value: ${row[col]}\n\nRelated columns:\n`;
+    numericCols.filter(c => c !== col).forEach(other => {
+      const x = currentData.map(r => parseFloat(r[col]));
+      const y = currentData.map(r => parseFloat(r[other]));
+      const r = pearsonCorrelation(x,y);
+      text += `${labelize(other)}: r=${r.toFixed(2)} (${r>0?'positive':'negative'})\n`;
+    });
+    modalTitle.textContent = labelize(col);
+    modalBody.textContent = text;
+  }
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function pearsonCorrelation(x,y){
+  const n=x.length;
+  const sumX=x.reduce((a,b)=>a+b,0), sumY=y.reduce((a,b)=>a+b,0);
+  const sumXY=x.reduce((s,xi,i)=>s+xi*y[i],0);
+  const sumX2=x.reduce((s,xi)=>s+xi*xi,0), sumY2=y.reduce((s,yi)=>s+yi*yi,0);
+  const num=n*sumXY-sumX*sumY;
+  const den=Math.sqrt((n*sumX2-sumX*sumX)*(n*sumY2-sumY*sumY));
+  return den===0?0:num/den;
+}
+
+function computeCorrelations(data){
+  let results=[];
+  for(let i=0;i<numericCols.length;i++){
+    for(let j=i+1;j<numericCols.length;j++){
+      const colA=numericCols[i],colB=numericCols[j];
+      const x=data.map(r=>parseFloat(r[colA])), y=data.map(r=>parseFloat(r[colB]));
+      results.push({colA,colB,r:pearsonCorrelation(x,y)});
+    }
+  }
+  results.sort((a,b)=>Math.abs(b.r)-Math.abs(a.r));
+  return results;
+}
+
+function renderCorrelations(results){
+  const container=document.getElementById('corrList');
+  container.innerHTML='';
+  results.forEach(res=>{
+    const strong = Math.abs(res.r) > 0.7 ? 'strong' : '';
+    const dir = res.r > 0 ? 'pos' : 'neg';
+    container.innerHTML += `<div class="corr-item ${dir} ${strong}">
+      <span class="pair">${labelize(res.colA)} &harr; ${labelize(res.colB)}</span>
+      <span class="rval">r = ${res.r.toFixed(2)}</span>
+    </div>`;
+  });
+}
+
+function renderSummary(data, results){
+  const el = document.getElementById('summaryText');
+  const n = data.length;
+
+  // Strongest cross-metric relationships
+  const notable = results.filter(r => Math.abs(r.r) >= 0.5).slice(0, 3);
+  let para1;
+  if (notable.length) {
+    const clauses = notable.map(res => {
+      const strength = Math.abs(res.r) > 0.75 ? 'strong' : 'moderate';
+      const dir = res.r > 0 ? 'positive' : 'negative';
+      return `${labelize(res.colA)} and ${labelize(res.colB)} show a ${strength} ${dir} correlation (r = ${res.r.toFixed(2)})`;
+    });
+    para1 = `Across the ${n} periods in this dataset, ${clauses.join('; ')}. `;
+    const top = notable[0];
+    const topDir = top.r > 0 ? 'move together' : 'move in opposite directions';
+    para1 += `The relationship between ${labelize(top.colA)} and ${labelize(top.colB)} is the most pronounced pattern — the two ${topDir} closely enough that it's worth digging into whether one is driving the other, or whether both are responding to a shared underlying factor.`;
+  } else {
+    para1 = `Across the ${n} periods in this dataset, no strong linear relationships emerged between the tracked metrics — most pairs move largely independently of one another.`;
+  }
+
+  // Trend over time, if a period column is present
+  let para2 = '';
+  if (periodCol && numericCols.length) {
+    const idx = data.map((_, i) => i);
+    const trendCandidates = numericCols.map(col => {
+      const y = data.map(r => parseFloat(r[col]));
+      return { col, r: pearsonCorrelation(idx, y), first: y[0], last: y[y.length-1] };
+    }).sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+
+    const movers = trendCandidates.filter(t => Math.abs(t.r) >= 0.4).slice(0, 2);
+    if (movers.length) {
+      const sentences = movers.map(m => {
+        const dir = m.r > 0 ? 'climbed' : 'declined';
+        return `${labelize(m.col)} ${dir} from ${m.first} to ${m.last}`;
       });
-      html += '</table>';
-      document.getElementById('tableContainer').innerHTML = html;
+      para2 = ` Over time, ${sentences.join(', while ')}, suggesting a directional trend rather than random noise.`;
     }
+  }
 
-    function pearsonCorrelation(x, y) {
-      const n = x.length;
-      const sumX = x.reduce((a,b) => a+b, 0);
-      const sumY = y.reduce((a,b) => a+b, 0);
-      const sumXY = x.reduce((sum, xi, i) => sum + xi*y[i], 0);
-      const sumX2 = x.reduce((sum, xi) => sum + xi*xi, 0);
-      const sumY2 = y.reduce((sum, yi) => sum + yi*yi, 0);
-      const num = n*sumXY - sumX*sumY;
-      const den = Math.sqrt((n*sumX2 - sumX*sumX) * (n*sumY2 - sumY*sumY));
-      return den === 0 ? 0 : num/den;
-    }
+  const caveat = `These are statistical associations observed in this dataset, not confirmed cause-and-effect relationships — treat them as starting points for investigation rather than conclusions.`;
 
-    function findCorrelations(data) {
-      if (!data.length) return;
-      const cols = Object.keys(data[0]);
-      const numericCols = cols.filter(c => 
-        data.every(row => !isNaN(parseFloat(row[c])))
-      );
-
-      let results = [];
-      for (let i = 0; i < numericCols.length; i++) {
-        for (let j = i+1; j < numericCols.length; j++) {
-          const colA = numericCols[i], colB = numericCols[j];
-          const x = data.map(r => parseFloat(r[colA]));
-          const y = data.map(r => parseFloat(r[colB]));
-          const r = pearsonCorrelation(x, y);
-          results.push({ colA, colB, r });
-        }
-      }
-
-      results.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
-
-      const container = document.getElementById('corrList');
-      container.innerHTML = '';
-      results.forEach(res => {
-        const strength = Math.abs(res.r) > 0.7 ? 'strong' : Math.abs(res.r) > 0.4 ? 'weak' : '';
-        const direction = res.r > 0 ? 'positive' : 'negative';
-        const desc = Math.abs(res.r) > 0.7 ? 'strong' : Math.abs(res.r) > 0.4 ? 'moderate' : 'weak';
-        container.innerHTML += `<div class="corr-item ${strength}">
-          <strong>${res.colA}</strong> vs <strong>${res.colB}</strong>: 
-          ${desc} ${direction} correlation (r = ${res.r.toFixed(2)})
-        </div>`;
-      });
-      document.getElementById('corrContainer').style.display = 'block';
-    }
-  </script>
+  el.innerHTML = `<p>${para1}${para2}</p><p class="caveat">${caveat}</p>`;
+}
+</script>
 </body>
 </html>
