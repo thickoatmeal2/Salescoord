@@ -433,10 +433,12 @@ function showCorrelationChart(res) {
       },
       scales: {
         x: {
+          title: { display: true, text: periodCol ? labelize(periodCol) : 'Period', color: textColor, font: { size: 12 } },
           ticks: { color: textColor, maxRotation: 45, font: { size: 10 } },
           grid: { color: gridColor }
         },
         y: {
+          title: { display: true, text: 'Value', color: textColor, font: { size: 12 } },
           ticks: { color: textColor, font: { size: 10 } },
           grid: { color: gridColor }
         }
@@ -554,10 +556,12 @@ function renderSummary(data, results){
         },
         scales: {
           x: {
+            title: { display: true, text: periodCol ? labelize(periodCol) : 'Period', color: textColor, font: { size: 12 } },
             ticks: { color: textColor, maxRotation: 45, font: { size: 10 } },
             grid: { color: gridColor }
           },
           y: {
+            title: { display: true, text: 'Value', color: textColor, font: { size: 12 } },
             ticks: { color: textColor, font: { size: 10 } },
             grid: { color: gridColor }
           }
