@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/30392557/README.md)
 # SalesCoord Terminal
 
 A lightweight sales data correlation explorer. Upload a spreadsheet (or generate sample data) to view metrics, correlations, and analyst notes.
@@ -6,11 +7,9 @@ A lightweight sales data correlation explorer. Upload a spreadsheet (or generate
 
 ```
 salescoord-terminal/
-├── index.html          # Main HTML entry point
-├── css/
-│   └── styles.css      # All styles (night / day themes)
-├── js/
-│   └── app.js          # Application logic
+├── index.html      # Main HTML entry point
+├── styles.css      # All styles (night / day themes)
+├── app.js          # Application logic
 └── README.md
 ```
 
