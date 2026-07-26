@@ -2,8 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SalesCoord Terminal</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
@@ -32,7 +34,7 @@
   </div>
   <div class="drop-zone" id="dropZone">
     <p>Drag &amp; drop your spreadsheet here, or click to browse</p>
-    <p class="hint">ACCEPTED: .XLSX &middot; .XLS &middot; .CSV — ONE ROW PER PERIOD, WITH A SOURCE COLUMN (REGION, SALESPERSON, STORE) AND OPTIONALLY A PERIOD COLUMN (WEEK/MONTH/QUARTER)</p>
+    <p class="hint">ACCEPTED: .XLSX · .XLS · .CSV — ONE ROW PER PERIOD, WITH A SOURCE COLUMN (REGION, SALESPERSON, STORE, CAMPAIGN…) AND OPTIONALLY A PERIOD COLUMN</p>
   </div>
   <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
   <button onclick="generateRandomData()">Generate Sample Data</button>
@@ -44,15 +46,24 @@
   <div class="summary-panel" id="summaryPanel">
     <h3>Analyst Note</h3>
     <div id="summaryText"></div>
+    <div class="chart-container" id="summaryChartWrap" style="display:none;">
+      <canvas id="summaryChart" height="240"></canvas>
+    </div>
   </div>
   <div class="table-scroll"><div id="tableContainer"></div></div>
-  <div class="correlations"><h3>Correlations Detected</h3><div id="corrList"></div></div>
+  <div class="correlations">
+    <h3>Correlations Detected</h3>
+    <div id="corrList"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h3 id="modalTitle">Details</h3>
     <p id="modalBody"></p>
+    <div class="modal-chart" id="modalChartWrap" style="display:none;">
+      <canvas id="modalChart" height="220"></canvas>
+    </div>
     <button onclick="closeModal()">Close</button>
   </div>
 </div>
